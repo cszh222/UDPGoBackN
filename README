@@ -1,0 +1,66 @@
+CS485-004 Introduction to Computer Networking (Spring 2014)
+Program Assginment 2
+Due Date: 4-24-2014
+By: Chang Zheng
+
+Files:
+ - README - this file
+ - UDPServer/server.cpp - source code for udpserver
+ - UDPServer/Makefile - makefile for compiling udpserver
+ - UDPClient/client.cpp - source code for udpclient
+ - UDPClient/Makefile - makefile for compiling udpclient
+
+Compilation:
+To compile udpserver, navigate to UDPServer directory and type "make" while in the directory.
+To compile udpclient, navigate to UDPClient directory and type "make" while in the directory.
+
+Running the program:
+NOTE: You must run udpserver before running udpclient.
+To run udpserver, navigate to UDPServer directory and run it as 
+	"./udpserver <port_no> <chunk_size> [<loss_rate>]"
+	<port_no> is the port number to bind to.
+	<chunk_size> is the size of the data, must be same as the <chunk_size> of udpclient.
+	[<loss_rate>] is the loss rate of packets, defaults to 0;
+To run udpclient, navigate to UDPClient directory and run it as
+	"./udpclient <server_ip> <server_port> <chunk_size> <window_size>"
+	<server_ip> is the ip address of udpserver.
+	<server_port> is the port number of udp server, must be same as <port_no> of udpserver.
+	<chunk_size> is the size of the data section of packet. If a number greater than 512
+		is entered, chunk_size will be set to 512.
+	<window_size> is the size of the transmission window.
+
+General Description:
+These two programs implments the Go Back N reliability algorithm. 
+udpserver is the reciever and udpclient is the sender.
+udpserver will wait for packets to be recieved. 
+If the packet recieved it type 1, then it will check to see the seq_no of the packet. If 
+the seq_no matches the expected sequence number to recieve, then udpserver will send an ACK of type 
+2 with ack_no equal to the expected sequence number and place the packet into the correct postion
+in the buffer. Otherwise it does nothing. 
+If the packet recieved is type 4, it will send an ACK of type 8, ack_no is equal to the seq_no of 
+the packet. Then it starts a timer for 7 seconds. Any packets of type 4 will get an ACK during the
+7 seconds. All other packets are ignored. When the timer stops, the expected sequence number gets 
+set back to -1 and it will wait for packets as when udpserver first started.
+
+udpclient will have 30 (this is hardcoded) packets to send to udpserver. The seq_no of the packets 
+will start with 0. It will send the number of packets allowed by the <window_size>. Once max number
+of packets have been sent, it will wait for ACKS. 
+If an ACK is recieved, it will move the base of the sending window to the max(base, ack_no). Then
+it moves on to see if it can send more packets. 
+If a timer runs out and tries is less than 10, it will resend all packets from base to base + window
+size. 
+If a timer runs out and tries is 10, the program will exit.
+When all 30 packets have been sent and all ACKs the packets have been recieved. it will start 
+teardown procedure. The program will then send a packet with type 4. 
+when an ack of type is recieved or 10 teardown packets have been sent, the program will exit. 
+
+Limitations:
+The number of packets to send in udpclient is hardcoded, there is nothing in the program 
+specifications that mentions how many packets to send. So it is a constant 30.
+The udpserver will run forever, even when the udpclient have finished all transmissions and exited.
+However this allows you to run udpclient as many times as needed as long as udpserver is running.
+The udpserver buffer for packets is also hardcoded for 30 packets. The buffer data will be 
+overwritten with new data each time udpclient is ran.
+udpserver will only handle one connection with udpclient at once.
+I only tested udpserver and udpclient in a local enviroment. They may or may not work in a 
+networked enviroment.
